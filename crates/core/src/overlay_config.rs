@@ -174,6 +174,10 @@ pub struct OverlayConfig {
     pub ps_drag_button: String,
     /// Dragging may also move you up/down (else horizontal only).
     pub ps_drag_vertical: bool,
+    /// Restrict dragging to height (OpenXR Y), overriding `ps_drag_vertical`.
+    pub ps_drag_vertical_only: bool,
+    /// Smooth drag corrections and ignore small hand-tracking jitter.
+    pub ps_drag_stabilize: bool,
     /// Screens, keyboard, photos and the dashboard move with you while dragging.
     pub ps_drag_follow: bool,
     // --- Gaming mode -------------------------------------------------------
@@ -271,6 +275,8 @@ impl Default for OverlayConfig {
             ps_drag_hands: "both".into(),
             ps_drag_button: "auto".into(),
             ps_drag_vertical: true,
+            ps_drag_vertical_only: false,
+            ps_drag_stabilize: true,
             ps_drag_follow: true,
             game_rumble: true,
             game_dock: "world".into(),
@@ -322,6 +328,26 @@ impl OverlayConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn playspace_drag_preferences_migrate_and_round_trip() {
+        for vertical in [false, true] {
+            let old: OverlayConfig = serde_json::from_value(serde_json::json!({
+                "ps_drag_vertical": vertical,
+            })).unwrap();
+            assert_eq!(old.ps_drag_vertical, vertical);
+            assert!(!old.ps_drag_vertical_only);
+            assert!(old.ps_drag_stabilize);
+        }
+        let config = OverlayConfig {
+            ps_drag_vertical_only: true,
+            ps_drag_stabilize: false,
+            ..Default::default()
+        };
+        let saved = serde_json::to_string(&config).unwrap();
+        let restored: OverlayConfig = serde_json::from_str(&saved).unwrap();
+        assert_eq!(restored, config);
+    }
 
     #[test]
     fn screencast_tokens_migrate_from_the_single_token() {

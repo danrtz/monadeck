@@ -74,6 +74,8 @@ On NVIDIA's driver, Monadeck turns off WebKit's DMA-BUF renderer by itself (set 
 
 **Artwork tip:** covers that came down as AVIF (some SteamGridDB downloads are, even with a `.png` name) won't decode. Re-save them as PNG/JPEG and hit **Settings → Refresh library**.
 
+**Playspace drag:** in **System → Playspace → Drag**, choose **Movement → Vertical only** to adjust height without moving sideways or forward/back. OpenXR uses Y for height. **Stabilize movement** is on by default: a 2 mm dead zone and short smoothing response reduce hand-tracking jitter. Both preferences are saved across restarts. Snap back still resets the full session drag offset.
+
 ## Development
 
 ```bash

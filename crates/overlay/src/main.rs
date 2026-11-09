@@ -23,6 +23,7 @@ mod monado;
 mod notifications;
 mod osc;
 mod photos;
+mod playspace_drag;
 mod preview;
 mod scene;
 mod shots;
@@ -1045,6 +1046,8 @@ fn run() -> Result<()> {
     st.ps_drag_hands = ov_cfg.ps_drag_hands.clone();
     st.ps_drag_button = ov_cfg.ps_drag_button.clone();
     st.ps_drag_vertical = ov_cfg.ps_drag_vertical;
+    st.ps_drag_vertical_only = ov_cfg.ps_drag_vertical_only;
+    st.ps_drag_stabilize = ov_cfg.ps_drag_stabilize;
     st.ps_drag_follow = ov_cfg.ps_drag_follow;
     st.watch_buttons.resize(4, "keyboard".into());
     st.notif_dbus_ok = notifications.dbus_ok;
@@ -1137,6 +1140,7 @@ fn run() -> Result<()> {
     // on top of the configured offset; a double press snaps it back to zero.
     let mut drag_ps: [f32; 3] = [0.0; 3];
     let mut space_drag: Option<(usize, [f32; 3])> = None; // (hand, hand pos in STAGE at start)
+    let mut drag_tick_prev = Instant::now();
     let mut pad_prev = [false; 2];
     let mut pad_last: [Option<Instant>; 2] = [None; 2];
     let mut pad_suppressed = [false; 2]; // held after a double press: no drag until release
@@ -1826,6 +1830,9 @@ fn run() -> Result<()> {
 
         // --- Playspace drag: hold its binding (trackpad; A+B on a glove), move the hand
         {
+            let drag_tick = Instant::now();
+            let drag_dt = drag_tick.duration_since(drag_tick_prev).as_secs_f32();
+            drag_tick_prev = drag_tick;
             use monadeck_core::bindings::{own, Hand as BHand};
             let gloves = monado.gloves();
             st.gloves = gloves;
@@ -1939,10 +1946,13 @@ fn run() -> Result<()> {
                 } else if let Some(h) = hands.get(hi).filter(|h| h.active) {
                     // Keep the hand where it was in the app: offset += (start − now).
                     let now = stage_pos(&h.aim);
-                    let mut d = [start[0] - now[0], start[1] - now[1], start[2] - now[2]];
-                    if !st.ps_drag_vertical {
-                        d[1] = 0.0;
-                    }
+                    let d = playspace_drag::correction(
+                        [start[0] - now[0], start[1] - now[1], start[2] - now[2]],
+                        st.ps_drag_vertical,
+                        st.ps_drag_vertical_only,
+                        st.ps_drag_stabilize,
+                        drag_dt,
+                    );
                     let len2 = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
                     if len2 > 1e-10 && len2 < 100.0 {
                         for k in 0..3 {
@@ -3911,6 +3921,8 @@ fn overlay_config_from(
         ps_drag_hands: st.ps_drag_hands.clone(),
         ps_drag_button: st.ps_drag_button.clone(),
         ps_drag_vertical: st.ps_drag_vertical,
+        ps_drag_vertical_only: st.ps_drag_vertical_only,
+        ps_drag_stabilize: st.ps_drag_stabilize,
         ps_drag_follow: st.ps_drag_follow,
         watch_mini: st.watch_mini,
         keyboard_haptics: st.keyboard_haptics,

@@ -272,7 +272,16 @@ fn playspace(ui: &mut egui::Ui, st: &mut LibState) {
             }
         });
         divider(ui);
-        t |= switch_row(ui, "Up and down too", "Off keeps it horizontal (no accidental floor changes)", &mut st.ps_drag_vertical);
+        row(ui, "Movement", "Vertical only changes height; sideways and forward/back stay fixed", 440.0, |ui| {
+            let selected = if st.ps_drag_vertical_only { 2 } else if st.ps_drag_vertical { 1 } else { 0 };
+            if let Some(i) = segmented(ui, &["Horizontal", "All directions", "Vertical only"], selected) {
+                st.ps_drag_vertical = i != 0;
+                st.ps_drag_vertical_only = i == 2;
+                t = true;
+            }
+        });
+        divider(ui);
+        t |= switch_row(ui, "Stabilize movement", "Smooth hand-tracking jitter with a 2 mm dead zone", &mut st.ps_drag_stabilize);
         divider(ui);
         t |= switch_row(ui, "Overlays follow you", "Screens, keyboard, photos and the dashboard keep their place around you", &mut st.ps_drag_follow);
         divider(ui);

@@ -328,6 +328,8 @@ pub struct LibState {
     /// What drives the drag, in words (from Monadeck's own bindings).
     pub ps_drag_summary: String,
     pub ps_drag_vertical: bool,
+    pub ps_drag_vertical_only: bool,
+    pub ps_drag_stabilize: bool,
     pub ps_drag_follow: bool,
     pub ps_drag_offset: [f32; 3], // live session offset from dragging (readout)
     pub ps_drag_reset_request: bool,
@@ -626,6 +628,8 @@ impl LibState {
             ps_drag_button: "auto".into(),
             ps_drag_summary: String::new(),
             ps_drag_vertical: true,
+            ps_drag_vertical_only: false,
+            ps_drag_stabilize: true,
             ps_drag_follow: true,
             ps_drag_offset: [0.0; 3],
             ps_drag_reset_request: false,
