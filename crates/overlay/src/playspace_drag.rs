@@ -40,9 +40,10 @@ pub fn correction(
         return [0.0; 3];
     }
     // A continuous dead zone avoids a step when deliberate motion begins.
-    // Time-based gain gives the same response at different headset rates.
-    // Cap a stalled frame's gain so resuming cannot produce a large correction.
-    let gain = (1.0 - (-dt.min(0.025) / RESPONSE_SECS).exp()) * (distance - DEAD_ZONE_M) / distance;
+    // Time-based gain gives the same response at normal headset rates. Below
+    // ~83 FPS, cap the gain: delayed origin updates must not make corrections
+    // overshoot and oscillate when a game drops frames.
+    let gain = (1.0 - (-dt.min(0.012) / RESPONSE_SECS).exp()) * (distance - DEAD_ZONE_M) / distance;
     error.map(|v| v * gain)
 }
 
@@ -109,7 +110,7 @@ mod tests {
 
     #[test]
     fn deliberate_motion_settles_at_different_refresh_rates() {
-        for hz in [60, 72, 90, 120, 144] {
+        for hz in [30, 45, 60, 72, 90, 120, 144] {
             // Simulate two frames of runtime latency between a correction and
             // the tracked pose reflecting it. This must settle without shaking.
             let mut history = [0.0; 3];
@@ -175,7 +176,7 @@ mod tests {
         }
         assert_eq!(
             correction([0.0, 0.1, 0.0], true, true, true, 1.0),
-            correction([0.0, 0.1, 0.0], true, true, true, 0.025)
+            correction([0.0, 0.1, 0.0], true, true, true, 0.012)
         );
     }
 }
